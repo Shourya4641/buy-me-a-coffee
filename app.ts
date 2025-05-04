@@ -22,6 +22,9 @@ const withdrawButton = document.getElementById(
   "withdrawButton"
 ) as HTMLButtonElement;
 const ethAmountInput = document.getElementById("ethAmount") as HTMLInputElement;
+const addressToAmount = document.getElementById(
+  "addressToAmount"
+) as HTMLButtonElement;
 
 let walletClient: WalletClient;
 let publicClient: PublicClient;
@@ -145,7 +148,36 @@ async function getCurrentChain(
   return currentChain;
 }
 
+async function getAmount(): Promise<void> {
+  if (typeof window.ethereum !== "undefined") {
+    try {
+      walletClient = createWalletClient({
+        transport: custom(window.ethereum),
+      });
+
+      const addresses = await walletClient.requestAddresses();
+      const account = addresses[0];
+
+      publicClient = createPublicClient({
+        transport: custom(window.ethereum),
+      });
+      const amountFunded = await publicClient.readContract({
+        address: contractAddress,
+        abi,
+        functionName: "getAddressToAmountFunded",
+        args: [account],
+      });
+      console.log(formatEther(amountFunded as bigint));
+    } catch (error) {
+      console.error(error);
+    }
+  } else {
+    addressToAmount.innerHTML = "Please install MetaMask";
+  }
+}
+
 connectButton.onclick = connect;
 fundButton.onclick = fund;
 balanceButton.onclick = getBalance;
 withdrawButton.onclick = withdraw;
+addressToAmount.onclick = getAmount;
